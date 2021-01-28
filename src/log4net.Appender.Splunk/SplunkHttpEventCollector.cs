@@ -18,7 +18,13 @@ namespace log4net.Appender.Splunk
         public string Index { get; set; }
         public string Host { get; set; }
         public int RetriesOnError { get; set; }
-        public int BatchIntevalMs { get; set; }
+        [Obsolete("Use BatchIntervalMs")]
+        public int BatchIntevalMs
+        {
+            get => BatchIntervalMs;
+            set => BatchIntervalMs = value;
+        }
+        public int BatchIntervalMs { get; set; }
         public int BatchSizeCount { get; set; }
         HttpEventCollectorSender.SendMode SendMode { get; set; } = HttpEventCollectorSender.SendMode.Sequential;
         public bool IgnoreCertificateErrors { get; set; }
@@ -38,7 +44,7 @@ namespace log4net.Appender.Splunk
                 Token,                                                                              // Splunk HEC token *GUID*
                 new HttpEventCollectorEventInfo.Metadata(Index, null, "_json", GetMachineName()),   // Metadata
                 SendMode,                                      
-                BatchIntevalMs,                                                                     // BatchInterval - Set to 0 to disable
+                BatchIntervalMs,                                                                     // BatchInterval - Set to 0 to disable
                 0,                                                                                  // BatchSizeBytes - Set to 0 to disable
                 BatchSizeCount,                                                                     // BatchSizeCount - Set to 0 to disable
                 new HttpEventCollectorResendMiddleware(RetriesOnError).Plugin,                      // Resend Middleware with retry
