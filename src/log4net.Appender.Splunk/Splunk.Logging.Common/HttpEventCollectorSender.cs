@@ -123,7 +123,6 @@ namespace Splunk.Logging
         private HttpEventCollectorFormatter formatter = null;
         // counter for bookkeeping the async tasks 
         private long activeAsyncTasksCount = 0;
-        private bool ignoreCertificateErrors;
 
         /// <summary>
         /// On error callbacks.
@@ -165,7 +164,6 @@ namespace Splunk.Logging
             this.token = token;
             this.middleware = middleware;
             this.formatter = formatter;
-            this.ignoreCertificateErrors = ignoreCertificateErrors;
 
             // special case - if batch interval is specified without size and count
             // they are set to "infinity", i.e., batch may have any size 
@@ -311,7 +309,7 @@ namespace Splunk.Logging
         /// </summary>
         public Task FlushAsync()
         {            
-            return new Task(() => 
+            return Task.Factory.StartNew(() =>
             {
                 FlushSync();
             });
@@ -370,7 +368,7 @@ namespace Splunk.Logging
             }
             else
             {
-                this.activePostTask = this.activePostTask.ContinueWith(async (_) => await FlushInternalSingleBatch(events, serializedEvents));
+                this.activePostTask = this.activePostTask.ContinueWith(async _ => await FlushInternalSingleBatch(events, serializedEvents));
             }
         }
 
@@ -381,7 +379,7 @@ namespace Splunk.Logging
             // post data and update tasks counter
             Interlocked.Increment(ref activeAsyncTasksCount);
             Task<HttpStatusCode> task = Task.Run(async () => await PostEvents(events, serializedEvents));
-            task.ContinueWith((_) => Interlocked.Decrement(ref activeAsyncTasksCount));
+            task.ContinueWith(_ => Interlocked.Decrement(ref activeAsyncTasksCount));
             return task;
         }
 
@@ -459,10 +457,7 @@ namespace Splunk.Logging
                 return;
             if (disposing)
             {
-                if (timer != null)
-                {
-                    timer.Dispose();
-                }
+                timer?.Dispose();
                 httpClient.Dispose();
             }
             disposed = true;

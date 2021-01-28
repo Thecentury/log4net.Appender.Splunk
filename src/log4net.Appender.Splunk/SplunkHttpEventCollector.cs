@@ -77,8 +77,7 @@ namespace log4net.Appender.Splunk
             // Build properties object and assign standard values
             var properties = new Dictionary<String, object>
             {
-                {"Source", loggingEvent.LoggerName},
-                { "Host", GetMachineName()}
+                {"Source", loggingEvent.LoggerName}
             };
 
             // Get properties from event
@@ -107,15 +106,22 @@ namespace log4net.Appender.Splunk
                 return Host;
             }
             
-            return !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("COMPUTERNAME")) ? System.Environment.GetEnvironmentVariable("COMPUTERNAME") : System.Net.Dns.GetHostName();
+            return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("COMPUTERNAME")) ? Environment.GetEnvironmentVariable("COMPUTERNAME") : System.Net.Dns.GetHostName();
         }
 
         public override bool Flush(int millisecondsTimeout)
         {
-            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(millisecondsTimeout));           
-            Task.Run(async () => await _hecSender.FlushAsync(), cancellationTokenSource.Token)
-                .Wait();
-            return true;
+            var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(millisecondsTimeout));
+            try
+            {
+                Task.Run(() => _hecSender.FlushAsync(), cancellationTokenSource.Token)
+                    .Wait(cancellationTokenSource.Token);
+                return true;
+            }
+            catch (AggregateException)
+            {
+                return false;
+            }
         }
     }
 }
